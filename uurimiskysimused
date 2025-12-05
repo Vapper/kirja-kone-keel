@@ -1,9 +1,7 @@
-* SKMile promptis anda roll ja tööülesanne?
-* kui palju erinevaid tekste on igas kümnendis? ja kui palju lauseid kokku?
-* Milliste sõnadega "kirjakeel" ja "kõnekeel" igal kümnendil kontekstis enim koos esinevad? Kollokatsioonid? Kas täpsustagu, et too 5 omadussõna, 5 nimisõna, 5 adjektiivi, 5 verbi? Peaks pilootima, et kui palju on mõttekas. Lisaks sagedus? Numbritega ei saa hakkama, aga "sage", "keskmine", "harva"?
-* Milliste teemadega igas kümnendis enim "kirjakeelt" ja "kõnekeelt" seostatakse? Siin ei oska ise ette anda kategooriaid. Ingl k "topic" panna prompti, et arusaamist lihtsustada? ERÜ slaididelt: teadus, põlvkonnad, rahvakeel, murded, võõrmõjud, keele areng, ÕS(??), tähendused...
-* Kas tegu on kirjelduse, kuulutuse, essee, ... millega? Lasta SKMil ise kategooriad luua või öelda ette, mille vahel valida?
-* Toon: negatiivne/kriitiline, neutraalne, positiivne
-* Register: informaalne, neutraalne, formaalne?
-* Kas eraldi esitada info välis-Eesti ajalehtede ja ENSV aegseid (1940-91?)? St millest NL-is ja millest vabas maailmas juttu?
-* Kas ütleks ette, et ära siis lõiku arvesse võta, kui on liiga sogane tekstituvastus, st ära proovi rändom guessida, vaid jäta kõrvale? kas siis jätab ka muid?
+* Kas anname SKMile promptis ette rolli ja tööülesande? – Ei pruugi olla vajalik. Aga võib proovida: "Oled eesti keele uurija (?keeleteadlane?) ja sinu ülesanne on (???analüüsida sõna kasutust ajakirjandustekstides???).
+* Milliste sõnadega "kirjakeel"/"kõnekeel" igal kümnendil kontekstis enim koos esinevad? Too kuni 5 omadussõna, 5 nimisõna, 5 määrsõna, 5 verbi, 5 kohanime. Lisa iga sõna juurde, kas see sõna esineb sagedasti, keskmiselt või harva võrreldes (??teiste sama sõnaliigi sõnadega??) – Tuleb pilootida, et kui palju on mõttekas küsida. Kõrvutada tulemusi automaatse analüsaatoriga.
+* Tee enim esilduvate sõnade põhjal kokkuvõte, millest igal kümnendil sõnaga "kirjakeel"/"kõnekeel" seoses enim juttu on. Too kuni 5 teemat.
+* Milline on iga artikli/konteksti üldine toon: kas negatiivne/kriitiline, neutraalne või positiivne?
+* Milline on iga artikli/konteksti üldine register: kas informaalne, neutraalne või formaalne?
+* Kas eraldi esitada info välis-Eesti ajalehtede ja ENSV aegseid (1940-91?)? St millest NL-is ja millest vabas maailmas juttu? hiljem vaadata eraldi
+* Kui palju erinevaid artikleid on igas kümnendis? Kui palju lauseid igas kümnendis kokku?
