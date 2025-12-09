@@ -1,0 +1,8 @@
+The following words frequently co-occur with "{term}" in Estonian texts from the {decade}:
+
+Nouns: {nouns}
+Adjectives: {adjectives}
+Verbs: {verbs}
+
+Based on these collocations, briefly explain (in 2-3 sentences) what topics or attitudes
+about "{term}" were prominent in this decade. Write in Estonian.

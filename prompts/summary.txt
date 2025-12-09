@@ -1,0 +1,13 @@
+Based on the following analysis of "{term}" usage across decades in Estonian newspapers,
+write a brief summary (3-5 sentences) of how discussions about this concept evolved over time.
+
+Collocation patterns:
+{collocations}
+
+Topic patterns:
+{topics}
+
+Tone distribution:
+{tones}
+
+Write the summary in Estonian.

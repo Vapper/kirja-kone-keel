@@ -1,0 +1,10 @@
+Classify the overall tone of this Estonian text discussing "{term}":
+
+"{context}"
+
+Choose exactly one option:
+- negatiivne/kriitiline (negative, critical, concerned)
+- neutraalne (neutral, descriptive, factual)
+- positiivne (positive, appreciative, supportive)
+
+Return only the classification, nothing else.

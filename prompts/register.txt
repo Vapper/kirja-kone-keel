@@ -1,0 +1,10 @@
+Classify the register/style of this Estonian text:
+
+"{context}"
+
+Choose exactly one option:
+- informaalne (informal, colloquial, casual)
+- neutraalne (neutral, standard)
+- formaalne (formal, academic, official)
+
+Return only the classification, nothing else.

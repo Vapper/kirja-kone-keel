@@ -1,0 +1,10 @@
+Analyze the following Estonian text excerpts from the {decade} discussing "{term}".
+Identify up to 5 main topics or themes being discussed in relation to this term.
+
+Text excerpts:
+{contexts}
+
+Return your analysis as JSON in this exact format:
+{{"topics": ["teema1", "teema2", "teema3", "teema4", "teema5"]}}
+
+Use Estonian for topic names. Be specific and concise (2-4 words per topic).

@@ -1,0 +1,13 @@
+Analyze Estonian newspaper excerpts about "{term}" from different decades.
+For each decade, identify the main themes being discussed.
+
+{decade_contexts}
+
+Return as JSON:
+{{
+  "1930s": ["teema1", "teema2", ...],
+  "1940s": ["teema1", "teema2", ...],
+  ...
+}}
+
+Use Estonian for topic names. Maximum 5 topics per decade.

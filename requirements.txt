@@ -1,0 +1,14 @@
+# Core dependencies
+pandas>=2.0.0
+openpyxl>=3.1.0
+python-dotenv>=1.0.0
+tqdm>=4.65.0
+
+# Estonian NLP
+estnltk>=1.7.2
+
+# LLM (OpenRouter uses OpenAI-compatible API)
+openai>=1.0.0
+
+# Researcher interface
+gradio>=4.0.0

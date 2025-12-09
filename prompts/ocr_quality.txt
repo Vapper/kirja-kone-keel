@@ -1,0 +1,11 @@
+Assess whether this historical Estonian text is readable enough for linguistic analysis,
+or if it's too corrupted by OCR (optical character recognition) errors:
+
+"{context}"
+
+Consider:
+- Are most words recognizable Estonian words?
+- Is the text coherent enough to understand the meaning?
+- Are there too many garbled characters or nonsense strings?
+
+Return exactly one word: "readable" or "corrupted".
