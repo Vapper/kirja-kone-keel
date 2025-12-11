@@ -2,6 +2,7 @@
 OpenRouter LLM client for semantic analysis.
 """
 import json
+import logging
 import time
 from typing import Optional
 
@@ -13,6 +14,8 @@ from .config import (
     DEFAULT_MODEL,
     AVAILABLE_MODELS,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class LLMClient:
@@ -99,6 +102,9 @@ class LLMClient:
             })
 
         try:
+            logger.debug(f"LLM request #{self._request_count + 1} to {self.model}")
+            start_time = time.time()
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -106,10 +112,15 @@ class LLMClient:
                 max_tokens=max_tokens,
             )
             self._request_count += 1
-            return response.choices[0].message.content.strip()
+
+            elapsed = time.time() - start_time
+            result = response.choices[0].message.content.strip()
+            logger.debug(f"LLM response received in {elapsed:.2f}s ({len(result)} chars)")
+
+            return result
 
         except Exception as e:
-            print(f"LLM request failed: {e}")
+            logger.error(f"LLM request failed: {e}")
             raise
 
     def analyze_batch(

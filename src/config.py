@@ -28,16 +28,16 @@ CORPUS_FILES = {
 # OpenRouter configuration
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "anthropic/claude-sonnet-4")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "anthropic/claude-haiku-4.5")
 
 # Available models for the interface
 AVAILABLE_MODELS = [
-    "anthropic/claude-sonnet-4",
-    "anthropic/claude-haiku",
-    "openai/gpt-4o",
-    "openai/gpt-4o-mini",
-    "google/gemini-2.0-flash-exp",
-    "google/gemini-2.5-pro-preview",
+    "anthropic/claude-sonnet-4.5",
+    "anthropic/claude-haiku-4.5",
+    "openai/gpt-5-mini",
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-flash-lite",
+    "mistralai/ministral-14b-2512"
 ]
 
 # Analysis settings

@@ -1,11 +1,20 @@
 """
 Combined analysis pipeline using EstNLTK and LLM.
 """
+import logging
 from dataclasses import dataclass, field
 from typing import Optional
 
 import pandas as pd
 from tqdm import tqdm
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 from .config import TARGET_TERMS, TONE_OPTIONS, REGISTER_OPTIONS
 from .data_loader import (
@@ -113,6 +122,86 @@ class CorpusAnalyzer:
 
         return results
 
+    def _is_readable_heuristic(self, context: str) -> bool:
+        """Simple heuristic to check if text is readable (no LLM)."""
+        if not context or len(context) < 10:
+            return False
+        # Check for too many non-Estonian characters
+        estonian_chars = set("abcdefghijklmnopqrsšzžtuvwõäöüxyzABCDEFGHIJKLMNOPQRSŠZŽTUVWÕÄÖÜXYZ")
+        text_chars = set(c for c in context if c.isalpha())
+        if len(text_chars) == 0:
+            return False
+        ratio = len(text_chars & estonian_chars) / len(text_chars)
+        return ratio > 0.8
+
+    def _batch_classify_tone(self, contexts: list[str], term: str) -> dict[str, int]:
+        """Classify tone for multiple contexts in one LLM call."""
+        logger.info(f"  → Batch tone classification for {len(contexts)} contexts")
+        if not contexts:
+            return {opt: 0 for opt in TONE_OPTIONS}
+
+        # Build batch prompt
+        contexts_text = "\n---\n".join([f"[{i+1}] {ctx[:300]}" for i, ctx in enumerate(contexts[:10])])
+        prompt = f"""Classify the tone of each Estonian text excerpt about "{term}".
+
+{contexts_text}
+
+For each excerpt [1], [2], etc., classify as: negatiivne/kriitiline, neutraalne, or positiivne
+
+Return as JSON: {{"1": "tone", "2": "tone", ...}}"""
+
+        logger.debug(f"  Sending tone prompt ({len(prompt)} chars)")
+        result = self.llm.analyze_json(prompt)
+        logger.debug(f"  Tone result: {result}")
+
+        # Count tones
+        tone_counts = {opt: 0 for opt in TONE_OPTIONS}
+        if result:
+            for key, tone in result.items():
+                tone_lower = tone.lower() if isinstance(tone, str) else ""
+                for option in TONE_OPTIONS:
+                    if option.lower() in tone_lower or tone_lower in option.lower():
+                        tone_counts[option] += 1
+                        break
+                else:
+                    tone_counts["neutraalne"] += 1
+
+        return tone_counts
+
+    def _batch_classify_register(self, contexts: list[str]) -> dict[str, int]:
+        """Classify register for multiple contexts in one LLM call."""
+        logger.info(f"  → Batch register classification for {len(contexts)} contexts")
+        if not contexts:
+            return {opt: 0 for opt in REGISTER_OPTIONS}
+
+        # Build batch prompt
+        contexts_text = "\n---\n".join([f"[{i+1}] {ctx[:300]}" for i, ctx in enumerate(contexts[:10])])
+        prompt = f"""Classify the register/style of each Estonian text excerpt.
+
+{contexts_text}
+
+For each excerpt [1], [2], etc., classify as: informaalne, neutraalne, or formaalne
+
+Return as JSON: {{"1": "register", "2": "register", ...}}"""
+
+        logger.debug(f"  Sending register prompt ({len(prompt)} chars)")
+        result = self.llm.analyze_json(prompt)
+        logger.debug(f"  Register result: {result}")
+
+        # Count registers
+        register_counts = {opt: 0 for opt in REGISTER_OPTIONS}
+        if result:
+            for key, register in result.items():
+                register_lower = register.lower() if isinstance(register, str) else ""
+                for option in REGISTER_OPTIONS:
+                    if option.lower() in register_lower or register_lower in option.lower():
+                        register_counts[option] += 1
+                        break
+                else:
+                    register_counts["neutraalne"] += 1
+
+        return register_counts
+
     def classify_tone(self, context: str, term: str) -> str:
         """
         Classify the tone of a single context using LLM.
@@ -207,15 +296,21 @@ class CorpusAnalyzer:
         Returns:
             List of topic strings
         """
+        logger.info(f"  → Extracting topics from {len(contexts)} contexts")
         if not self.llm:
             raise ValueError("LLM client not initialized")
 
         prompt = format_topic_prompt(term, decade, contexts, max_contexts)
+        logger.debug(f"  Sending topic prompt ({len(prompt)} chars)")
         result = self.llm.analyze_json(prompt)
+        logger.debug(f"  Topic result: {result}")
 
         if result and "topics" in result:
-            return result["topics"][:5]
+            topics = result["topics"][:5]
+            logger.info(f"  ✓ Found {len(topics)} topics")
+            return topics
 
+        logger.warning(f"  ✗ No topics extracted")
         return []
 
     def run_full_analysis(
@@ -239,8 +334,12 @@ class CorpusAnalyzer:
         Returns:
             Complete analysis results
         """
+        logger.info(f"Starting full analysis: corpus={corpus_name}, term={term}, sample_size={sample_size}")
+
         # Basic statistics
+        logger.info("Computing statistics...")
         stats = self.compute_statistics(corpus_name)
+        logger.info(f"Total articles: {stats['total_articles']}, sentences: {stats['total_sentences']}")
 
         result = CorpusAnalysisResult(
             corpus_name=corpus_name,
@@ -253,14 +352,18 @@ class CorpusAnalyzer:
         # Get decades
         df = load_corpus(corpus_name)
         decades_data = group_by_decade(df)
+        logger.info(f"Found {len(decades_data)} decades: {list(decades_data.keys())}")
 
         # Process each decade
         decade_list = list(decades_data.keys())
         iterator = tqdm(decade_list, desc="Analyzing decades") if show_progress else decade_list
 
         for decade in iterator:
+            logger.info(f"\n{'='*50}")
+            logger.info(f"Processing decade: {decade}")
             decade_df = decades_data[decade]
             contexts = decade_df["context"].dropna().tolist()
+            logger.info(f"  Contexts available: {len(contexts)}")
 
             decade_analysis = DecadeAnalysis(
                 decade=decade,
@@ -269,40 +372,47 @@ class CorpusAnalyzer:
             )
 
             # Collocation analysis (EstNLTK)
+            logger.info(f"  → Running collocation analysis (EstNLTK)...")
             decade_analysis.collocations = self.nlp.get_collocations_by_category(
                 contexts, term, decade
             )
+            logger.info(f"  ✓ Collocations extracted")
 
             # LLM-based analysis
             if not skip_llm and self.llm:
+                logger.info(f"  → Starting LLM analysis (model: {self.llm.model})")
                 # Sample contexts for LLM
                 sample = contexts[:sample_size] if len(contexts) > sample_size else contexts
+                logger.info(f"  Sample size: {len(sample)}")
 
-                # Topic extraction
-                decade_analysis.topics = self.extract_topics(sample, term, decade)
+                # Filter readable contexts using simple heuristic (no LLM)
+                readable_sample = [ctx for ctx in sample if self._is_readable_heuristic(ctx)]
+                ocr_counts = {
+                    "readable": len(readable_sample),
+                    "corrupted": len(sample) - len(readable_sample)
+                }
+                logger.info(f"  Readable contexts: {len(readable_sample)}/{len(sample)}")
 
-                # Tone and register classification
-                tone_counts = {opt: 0 for opt in TONE_OPTIONS}
-                register_counts = {opt: 0 for opt in REGISTER_OPTIONS}
-                ocr_counts = {"readable": 0, "corrupted": 0}
+                # Topic extraction (1 LLM call per decade)
+                decade_analysis.topics = self.extract_topics(readable_sample, term, decade)
 
-                for ctx in sample:
-                    # OCR check first
-                    if self.check_ocr_quality(ctx):
-                        ocr_counts["readable"] += 1
-                        tone = self.classify_tone(ctx, term)
-                        register = self.classify_register(ctx)
-                        tone_counts[tone] = tone_counts.get(tone, 0) + 1
-                        register_counts[register] = register_counts.get(register, 0) + 1
-                    else:
-                        ocr_counts["corrupted"] += 1
+                # Batch tone and register classification (1 call each per decade)
+                tone_counts = self._batch_classify_tone(readable_sample, term)
+                register_counts = self._batch_classify_register(readable_sample)
 
                 decade_analysis.tone_distribution = tone_counts
                 decade_analysis.register_distribution = register_counts
                 decade_analysis.ocr_quality = ocr_counts
 
+                logger.info(f"  ✓ LLM analysis complete for {decade}")
+                logger.info(f"    Topics: {decade_analysis.topics}")
+                logger.info(f"    Tone: {tone_counts}")
+                logger.info(f"    Register: {register_counts}")
+
             result.decades[decade] = decade_analysis
 
+        logger.info(f"\n{'='*50}")
+        logger.info(f"Analysis complete! Processed {len(result.decades)} decades")
         return result
 
     def run_statistics_only(self, corpus_name: str) -> dict:

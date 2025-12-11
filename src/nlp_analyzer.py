@@ -1,12 +1,37 @@
 """
 EstNLTK-based NLP analysis for Estonian corpus data.
 """
+import html
 import math
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Optional
 
 from .config import COLLOCATION_WINDOW, MIN_FREQUENCY, POS_TAGS, TOP_COLLOCATIONS
+
+
+def clean_text(text: str) -> str:
+    """
+    Clean text for NLP processing.
+    Removes HTML tags, normalizes whitespace, handles escape sequences.
+    """
+    if not text:
+        return ""
+
+    # Decode HTML entities
+    text = html.unescape(text)
+
+    # Remove HTML tags
+    text = re.sub(r'<[^>]+>', ' ', text)
+
+    # Remove escape sequences like \\", \\'
+    text = text.replace('\\"', '"').replace("\\'", "'").replace('\\\\', ' ')
+
+    # Normalize whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
 
 # EstNLTK imports - wrapped for graceful degradation
 try:
@@ -116,8 +141,17 @@ class NLPAnalyzer:
             if not text or not isinstance(text, str):
                 continue
 
-            doc = Text(text)
-            doc.tag_layer(["morph_analysis"])
+            # Clean text before processing
+            text = clean_text(text)
+            if not text or len(text) < 10:
+                continue
+
+            try:
+                doc = Text(text)
+                doc.tag_layer(["morph_analysis"])
+            except Exception as e:
+                # Skip texts that cause parsing errors
+                continue
 
             words = list(doc.morph_analysis)
             total_words += len(words)
@@ -149,6 +183,10 @@ class NLPAnalyzer:
 
                             # Skip punctuation and short words
                             if len(lemma) < 2 or pos in ["Z", "J"]:
+                                continue
+
+                            # Skip the target word itself
+                            if lemma.lower() == target_lower:
                                 continue
 
                             collocations[lemma]["pos"] = pos

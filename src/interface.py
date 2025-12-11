@@ -69,36 +69,47 @@ class ResearcherInterface:
         word_classes: list[str],
     ) -> pd.DataFrame:
         """Get collocations as DataFrame."""
-        if not self.analyzer:
-            self._init_analyzer(DEFAULT_MODEL, use_llm=False)
+        # Validate inputs
+        if not decade:
+            return pd.DataFrame([{"Viga": "Palun vali kümnend"}])
 
-        result = self.analyzer.run_collocation_only(corpus, term, decade)
+        if not word_classes:
+            return pd.DataFrame([{"Viga": "Palun vali vähemalt üks sõnaliik"}])
 
-        rows = []
-        class_mapping = {
-            "Nimisõnad": "nouns",
-            "Omadussõnad": "adjectives",
-            "Tegusõnad": "verbs",
-            "Määrsõnad": "adverbs",
-            "Kohanimed": "proper_nouns",
-        }
+        try:
+            if not self.analyzer:
+                self._init_analyzer(DEFAULT_MODEL, use_llm=False)
 
-        for class_name in word_classes:
-            attr_name = class_mapping.get(class_name)
-            if attr_name:
-                collocations = getattr(result, attr_name, [])
-                for coll in collocations:
-                    rows.append({
-                        "Sõnaliik": class_name,
-                        "Sõna": coll.word,
-                        "Lemma": coll.lemma,
-                        "Sagedus": coll.count,
-                        "Sagedusklass": coll.frequency,
-                    })
+            result = self.analyzer.run_collocation_only(corpus, term, decade)
 
-        return pd.DataFrame(rows) if rows else pd.DataFrame(
-            columns=["Sõnaliik", "Sõna", "Lemma", "Sagedus", "Sagedusklass"]
-        )
+            rows = []
+            class_mapping = {
+                "Nimisõnad": "nouns",
+                "Omadussõnad": "adjectives",
+                "Tegusõnad": "verbs",
+                "Määrsõnad": "adverbs",
+                "Kohanimed": "proper_nouns",
+            }
+
+            for class_name in word_classes:
+                attr_name = class_mapping.get(class_name)
+                if attr_name:
+                    collocations = getattr(result, attr_name, [])
+                    for coll in collocations:
+                        rows.append({
+                            "Sõnaliik": class_name,
+                            "Sõna": coll.word,
+                            "Lemma": coll.lemma,
+                            "Sagedus": coll.count,
+                            "Sagedusklass": coll.frequency,
+                        })
+
+            return pd.DataFrame(rows) if rows else pd.DataFrame(
+                columns=["Sõnaliik", "Sõna", "Lemma", "Sagedus", "Sagedusklass"]
+            )
+
+        except Exception as e:
+            return pd.DataFrame([{"Viga": str(e)}])
 
     def _run_semantic_analysis(
         self,
@@ -106,6 +117,7 @@ class ResearcherInterface:
         term: str,
         model: str,
         sample_size: int,
+        use_all: bool = False,
         progress=gr.Progress(),
     ) -> tuple:
         """Run LLM-based semantic analysis."""
@@ -113,10 +125,13 @@ class ResearcherInterface:
 
         progress(0, desc="Alustamine...")
 
+        # If use_all is checked, set sample_size to a very large number
+        effective_sample_size = 100000 if use_all else int(sample_size)
+
         result = self.analyzer.run_full_analysis(
             corpus_name=corpus,
             term=term,
-            sample_size=sample_size,
+            sample_size=effective_sample_size,
             skip_llm=False,
             show_progress=False,
         )
@@ -157,11 +172,7 @@ class ResearcherInterface:
 
         with gr.Blocks(
             title="Kirjakeel/Kõnekeel Korpuse Analüüs",
-            theme=gr.themes.Soft(),
         ) as app:
-
-            gr.Markdown("# Kirjakeel/Kõnekeel Korpuse Analüüs")
-            gr.Markdown("Eesti ajalooliste ajalehetekstide analüüsitööriist")
 
             # Settings section
             with gr.Row():
@@ -202,9 +213,16 @@ class ResearcherInterface:
                     if not ESTNLTK_AVAILABLE:
                         gr.Markdown("⚠️ EstNLTK pole installitud. Installige: `pip install estnltk`")
 
+                    # Get initial decades for default corpus
+                    try:
+                        initial_decades = get_available_decades("kirjakeel")
+                    except Exception:
+                        initial_decades = []
+
                     with gr.Row():
                         decade_dropdown = gr.Dropdown(
-                            choices=[],
+                            choices=initial_decades,
+                            value=initial_decades[0] if initial_decades else None,
                             label="Kümnend",
                         )
                         pos_checkboxes = gr.CheckboxGroup(
@@ -241,13 +259,19 @@ class ResearcherInterface:
                     gr.Markdown("### LLM-põhine analüüs (OpenRouter)")
                     gr.Markdown("Teemad, toon ja register")
 
-                    sample_slider = gr.Slider(
-                        minimum=1,
-                        maximum=50,
-                        value=10,
-                        step=1,
-                        label="Valimi suurus kümnendi kohta",
-                    )
+                    with gr.Row():
+                        sample_slider = gr.Slider(
+                            minimum=1,
+                            maximum=100,
+                            value=10,
+                            step=1,
+                            label="Valimi suurus kümnendi kohta",
+                        )
+                        use_all_checkbox = gr.Checkbox(
+                            label="Kasuta kõiki kontekste",
+                            value=False,
+                            info="Hoiatus: võib olla aeglane ja kulukas!"
+                        )
 
                     analyze_btn = gr.Button("Käivita analüüs", variant="primary")
 
@@ -260,7 +284,7 @@ class ResearcherInterface:
 
                     analyze_btn.click(
                         fn=self._run_semantic_analysis,
-                        inputs=[corpus_dropdown, term_dropdown, model_dropdown, sample_slider],
+                        inputs=[corpus_dropdown, term_dropdown, model_dropdown, sample_slider, use_all_checkbox],
                         outputs=[topics_output, tone_output, register_output],
                     )
 
@@ -290,10 +314,6 @@ class ResearcherInterface:
 
                     export_excel_btn.click(fn=export_excel, outputs=[export_file])
                     export_json_btn.click(fn=export_json, outputs=[export_file])
-
-            # Footer
-            gr.Markdown("---")
-            gr.Markdown("*Kirjakeel/Kõnekeel analüüsitööriist | EstNLTK + OpenRouter*")
 
         return app
 

@@ -21,7 +21,7 @@ def cmd_stats(args):
     print(f"\n=== Korpus: {args.corpus} ===\n")
     print(f"Artikleid kokku: {stats['total_articles']}")
     print(f"Lauseid kokku: {stats['total_sentences']}")
-    print("\nKümnendite kaupa:")
+    print("\nKÃ¼mnendite kaupa:")
     print("-" * 40)
 
     for decade, data in sorted(stats["by_decade"].items()):
@@ -46,7 +46,7 @@ def cmd_collocations(args):
 
     if args.decade:
         result = analyzer.run_collocation_only(args.corpus, args.term, args.decade)
-        print(f"Kümnend: {args.decade}\n")
+        print(f"KÃ¼mnend: {args.decade}\n")
         _print_collocations(result)
     else:
         results = analyzer.extract_collocations_by_decade(args.corpus, args.term)
@@ -58,10 +58,10 @@ def cmd_collocations(args):
 def _print_collocations(result):
     """Print collocation results."""
     categories = [
-        ("Nimisõnad", result.nouns),
-        ("Omadussõnad", result.adjectives),
-        ("Tegusõnad", result.verbs),
-        ("Määrsõnad", result.adverbs),
+        ("NimisÃµnad", result.nouns),
+        ("OmadussÃµnad", result.adjectives),
+        ("TegusÃµnad", result.verbs),
+        ("MÃ¤Ã¤rsÃµnad", result.adverbs),
         ("Kohanimed", result.proper_nouns),
     ]
 
@@ -74,7 +74,7 @@ def _print_collocations(result):
 
 def cmd_analyze(args):
     """Run full analysis with LLM."""
-    print(f"\n=== Täisanalüüs: {args.term} ({args.corpus}) ===")
+    print(f"\n=== TÃ¤isanalÃ¼Ã¼s: {args.term} ({args.corpus}) ===")
     print(f"Mudel: {args.model}")
     print(f"Valimi suurus: {args.sample}\n")
 
@@ -105,17 +105,17 @@ def cmd_analyze(args):
 def cmd_decades(args):
     """List available decades in corpus."""
     decades = get_available_decades(args.corpus)
-    print(f"\n=== Kümnendid korpuses: {args.corpus} ===\n")
+    print(f"\n=== KÃ¼mnendid korpuses: {args.corpus} ===\n")
     for decade in decades:
         print(f"  {decade}")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Kirjakeel/Kõnekeel korpuse analüüs",
+        description="Kirjakeel/KÃµnekeel korpuse analÃ¼Ã¼s",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Näited:
+NÃ¤ited:
   python main.py stats --corpus kirjakeel
   python main.py collocations --corpus kirjakeel --term kirjakeel --decade 1930s
   python main.py analyze --corpus kirjakeel --term kirjakeel --model anthropic/claude-sonnet-4
@@ -123,10 +123,10 @@ Näited:
         """,
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="Käsk")
+    subparsers = parser.add_subparsers(dest="command", help="KÃ¤sk")
 
     # Stats command
-    stats_parser = subparsers.add_parser("stats", help="Näita statistikat")
+    stats_parser = subparsers.add_parser("stats", help="NÃ¤ita statistikat")
     stats_parser.add_argument(
         "--corpus",
         choices=["kirjakeel", "konekeel"],
@@ -150,11 +150,11 @@ Näited:
     )
     coll_parser.add_argument(
         "--decade",
-        help="Konkreetne kümnend (nt 1930s)",
+        help="Konkreetne kÃ¼mnend (nt 1930s)",
     )
 
     # Analyze command
-    analyze_parser = subparsers.add_parser("analyze", help="Täisanalüüs LLM-iga")
+    analyze_parser = subparsers.add_parser("analyze", help="TÃ¤isanalÃ¼Ã¼s LLM-iga")
     analyze_parser.add_argument(
         "--corpus",
         choices=["kirjakeel", "konekeel"],
@@ -177,16 +177,16 @@ Näited:
         "--sample",
         type=int,
         default=10,
-        help="Valimi suurus kümnendi kohta (default: 10)",
+        help="Valimi suurus kÃ¼mnendi kohta (default: 10)",
     )
     analyze_parser.add_argument(
         "--output",
         "-o",
-        help="Väljundfaili tee (.xlsx või .json)",
+        help="VÃ¤ljundfaili tee (.xlsx vÃµi .json)",
     )
 
     # Decades command
-    decades_parser = subparsers.add_parser("decades", help="Näita saadaolevaid kümnendeid")
+    decades_parser = subparsers.add_parser("decades", help="NÃ¤ita saadaolevaid kÃ¼mnendeid")
     decades_parser.add_argument(
         "--corpus",
         choices=["kirjakeel", "konekeel"],
